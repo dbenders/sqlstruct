@@ -89,6 +89,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 )
 
 // NameMapper is the function used to convert struct fields which do not have sql tags
@@ -159,6 +160,10 @@ func getFieldInfo(typ reflect.Type) fieldInfo {
 		}
 		tag = NameMapper(tag)
 
+		if f.Type == reflect.TypeOf(time.Time{}) {
+			tag = "unix_timestamp(" + tag + ")"
+		}
+
 		finfo[tag] = []int{i}
 	}
 
@@ -205,7 +210,8 @@ func ColumnsAliased(s interface{}, alias string) string {
 	names := cols(s)
 	aliased := make([]string, 0, len(names))
 	for _, n := range names {
-		aliased = append(aliased, alias+"."+n+" AS "+alias+"_"+n)
+		aliased = append(aliased, "coalesce("+alias+"."+n+",0) AS "+alias+"_"+n)
+		//aliased = append(aliased, fn0+alias+"."+n+fn1+" AS "+alias+"_"+n)
 	}
 	return strings.Join(aliased, ", ")
 }
